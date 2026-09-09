@@ -1,0 +1,41 @@
+# Clean-trained CNN; final epoch, not test-selected or validation-best.
+attack:
+  kind: vision_inversion
+  protocol: en08_per_source_10ep_v1
+  source: PathVQA
+  seed: 42
+  train_representations: clean
+  noise_augmentation: false
+  decoder:
+    channels: 128
+    residual_blocks: 3
+    spatial_merge_size: 2
+    output_activation: sigmoid
+training:
+  epochs: 10
+  checkpoint_selection: final_epoch
+  per_device_batch_size: 1
+  gradient_accumulation_steps: 4
+  learning_rate: 0.0001
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  scheduler: cosine
+  max_grad_norm: 1.0
+  save_steps: 100
+  overfit_examples: 4
+  overfit_steps: 100
+  overfit_required_loss_ratio: 0.8
+evaluation:
+  seed: 42
+  draws_per_noisy_epsilon: 3
+  epsilons:
+    - clean
+    - 0.01
+    - 0.021173217543376043
+    - 0.04483051411391271
+    - 0.09492062279152638
+    - 0.20097749957177263
+    - 0.4255340319756908
+    - 0.9009924631131238
+    - 1.8019849262262475
+    - 3.603969852452495

@@ -1,0 +1,47 @@
+stage: stage1
+run_name: paper-stage1-qwen35-08b-seed42
+model_config: configs/model/qwen35_08b_kure.yaml
+decoder_tuning: full
+seed: 42
+epochs: 1
+global_batch_size: 128
+per_device_batch_size: 16
+gradient_accumulation_steps: 2
+learning_rate_groups:
+  kure: 2.0e-5
+  projector: 2.0e-4
+  native_merger: 2.0e-5
+  decoder: 2.0e-5
+weight_decay: 0.01
+warmup_ratio: 0.03
+scheduler: cosine
+max_grad_norm: 1.0
+precision: bf16
+gradient_checkpointing:
+  decoder: true
+  kure: false
+  vision: false
+deepspeed_config: configs/accelerate/deepspeed_zero2.json
+noise:
+  kind: isotropic_l2_laplace
+  enabled: false
+  epsilon: null
+data:
+  manifest: data/processed/stage1/train.jsonl
+  balance_modalities: false
+data_runtime:
+  cost_bucket_size: 256
+  num_workers: 2
+  prefetch_factor: 2
+checkpoint:
+  output_dir: outputs/checkpoints/stage1
+  save_steps: 2048
+  milestones: [256, 1024]
+  fractional_milestones: []
+  save_final: true
+paper_contract:
+  unique_manifest_rows: 3488347
+  unique_text_rows: 2761963
+  unique_image_rows: 726384
+  padded_epoch_examples: 3488384
+  max_native_visual_tokens_per_image: 1024
