@@ -1,13 +1,12 @@
-# 데이터 출처와 실행 lineage
+# 데이터 출처와 버전
 
-이 문서는 논문 실행에서 실제로 사용된 source family와 고정 revision을 구분합니다. 데이터는 이 저장소에
-포함되지 않으며, 재배포 권한을 보증하지 않으므로 각 upstream의 최신 이용 조건과 원 저작물 조건을 확인해야 합니다.
+논문 실험에 사용한 데이터셋과 버전, 전처리 후 예제 수를 정리했습니다. [입력 형식](schema.md) · [전처리 명령](README.md)
 
 ## Stage 1
 
-최종 3,488,347-row English Stage 1의 source별 count는 다음과 같습니다.
+영어 학습 예제 3,488,347개의 데이터셋별 구성입니다.
 
-| source | rows |
+| 데이터셋 | 학습 예제 수 |
 |---|---:|
 | WebInstructSub | 2,098,886 |
 | SmolTalk all | 485,897 |
@@ -22,20 +21,11 @@
 | medical meadow flashcards | 4,092 |
 | ScienceQA | 3,451 |
 
-기존 English manifest 3,288,372개에 official VQAv2 train question-image pair 200,000개를 추가했습니다.
-VQAv2의 443,757 raw pair에서 중복 124개를 제외한 443,633 eligible pair를 만든 뒤, seed 42와 canonical
-`{seed, question_id}` SHA-256 순서로 200,000개를 골랐습니다. answer type은 yes/no 75,188, number
-25,975, other 98,837입니다. 이후 1,024 visual-token ceiling으로 LLaVA 18개와 TextVQA 7개를 제외했고
-VQAv2 row는 모두 유지했습니다.
-
-이 공개 export는 여러 upstream의 다운로드/파싱 코드를 모두 복제하지 않습니다. source-native adapter 결과를
-[`schema.md`](schema.md)의 canonical JSONL로 만든 뒤 공통 publication 코드를 실행해야 합니다. 이는 개인
-cache 경로와 수 GB 데이터 조작 코드를 논문 핵심 방법처럼 공개하는 것을 피하면서, 실제 필터·누수 제거·샘플링
-규칙을 그대로 남기기 위한 경계입니다.
+기존 영어 예제 3,288,372개에 VQAv2의 질문·이미지 쌍 200,000개를 추가했습니다. VQAv2 원본 443,757쌍에서 중복 124쌍을 제거한 뒤, `{seed, question_id}`의 SHA-256 순서로 샘플링했습니다(seed 42). 선택된 예제는 예·아니요 75,188개, 숫자 25,975개, 기타 98,837개입니다. 이후 비전 토큰 한도(1,024)를 적용해 LLaVA 18개와 TextVQA 7개를 제외했습니다.
 
 ## Stage 2
 
-| source | 고정 revision / provenance | 최종 train rows |
+| 데이터셋 | 사용한 버전 또는 출처 | 학습 예제 수 |
 |---|---|---:|
 | Pri-DDXPlus | 이전 연구 local `dataset2`, checksum manifest로 고정 | 54,992 |
 | Pri-NLICE | 이전 연구 local `dataset2`, checksum manifest로 고정 | 3,249 |
@@ -46,23 +36,10 @@ cache 경로와 수 GB 데이터 조작 코드를 논문 핵심 방법처럼 공
 | PathVQA mirror | `1685832883334b5bb5beaf4e4b333fdeecaa4ad9` | 6,639 |
 | PMC-VQA v2 | `b56ae594f794867893143b337b4118a835794647` | 152,471 |
 
-Stage 2 main benchmark는 Pri-DDX, Pri-NLICE, VQA-RAD, SLAKE, PathVQA이며 train repeat factor 4를
-적용했습니다. MedMCQA, flashcards, PMC-VQA는 support source로 factor 1입니다. SLAKE의 비영어 row는
-제외했습니다.
+학습 시 Pri-DDX, Pri-NLICE, VQA-RAD, SLAKE, PathVQA의 예제에는 반복 가중치 4를, MedMCQA, flashcards, PMC-VQA의 예제에는 1을 적용했습니다. SLAKE는 영어 예제만 사용했습니다.
 
-Pri-DDX/Pri-NLICE MCQA는 과거 생성 문장의 reasoning에서 정답을 다시 추출하지 않았습니다. 완전한 질문과
-모든 option을 구조화 source와 answer-independent하게 join하고, gold option text를 target으로 사용했습니다.
-경계가 모호한 legacy A/B/C/D serialization은 structured MedMCQA option sequence와 정확히 일치할 때만
-허용했으며, 일치하지 않으면 fail closed 했습니다.
+Pri-DDX와 Pri-NLICE의 객관식 예제는 원본 질문과 전체 선택지를 구조화한 뒤 정답 선택지의 텍스트를 학습 대상으로 사용했습니다. 이전 A/B/C/D 형식의 레코드는 구조화된 MedMCQA 선택지 순서와 일치할 때 사용했습니다.
 
-## PathVQA 복원 공격 split
+## PathVQA 이미지 복원
 
-복원기는 PathVQA의 image SHA-256 기준 중복 제거 split으로 학습/선정/평가했습니다.
-
-| split | unique images | 용도 |
-|---|---:|---|
-| train | 2,350 | clean representation에서 공격 모델 학습 |
-| validation | 831 | 학습 중 validation MSE 기록; 최종 10 epoch checkpoint 사용 |
-| test | 857 | clean/noisy representation MSE 평가 |
-
-동일 image SHA-256은 split을 넘지 않으며, 질문 수가 아니라 unique image가 denominator입니다.
+이미지 SHA-256을 기준으로 중복을 제거한 뒤 학습 2,350장, 검증 831장, 테스트 857장을 사용했습니다. [분할 기준과 평가 명령](../docs/REPRODUCIBILITY.md#pathvqa-이미지-복원)

@@ -1,7 +1,6 @@
-# Canonical JSONL 스키마
+# 입력 JSONL 스키마
 
-JSONL의 각 줄은 하나의 JSON object입니다. 런타임이 사용하는 image reference는 중첩 객체가 아니라
-`image_path`/`image` 평면 필드입니다.
+한 줄에 예제 하나를 JSON 객체로 저장합니다. 이미지 경로는 최상위 필드 `image_path` 또는 `image`에 넣습니다.
 
 ```json
 {
@@ -26,21 +25,11 @@ JSONL의 각 줄은 하나의 JSON object입니다. 런타임이 사용하는 im
 }
 ```
 
-## 필드 계약
+## 필드 작성 방법
 
-- `private_input`은 raw private text를 모두 결합한 KURE 입력입니다. MCQA는 공통 instruction, 완전한 질문,
-  모든 labeled option을 하나의 sequence에 포함합니다. Qwen decoder의 text token ID 입력으로 재사용하지
-  않습니다.
-- `final_answer`는 구조화된 gold field에서 얻은 실제 정답 내용입니다. `target`은 answer/EOS loss가 적용될
-  decoder target입니다. 객관식은 letter만이 아니라 gold option text를 감독합니다.
-- text row에는 image 필드가 없어야 하고, image-text row에는 `image_path`와 실제 파일 바이트의
-  `image_sha256`이 필요합니다. 생성된 manifest와 image payload 자체는 Git에 넣지 않습니다.
-- `input_token_length`는 고정 KURE tokenizer에서 special token을 포함한 길이, `target_token_length`는 고정
-  Qwen tokenizer 길이에 EOS 1개를 더한 값입니다.
-- `metadata.native_visual_tokens`는 Qwen native processor의 post-merge token 수입니다. 재현 실행에서는
-  processor revision과 image SHA audit을 별도로 고정해야 합니다.
-- `repeat_factor`와 `semantic_id`, `content_id`, `input_hash`, `answer_hash`, `group_id`는
-  `prepare_data.py`가 다시 계산합니다. stale upstream identity를 신뢰하지 않습니다.
-
-출력 `report.json`은 count와 hash만 담습니다. `private_input`, answer, image bytes, 절대 경로 등 private
-payload를 audit report에 복제하지 않습니다.
+- `private_input`은 KURE에 전달할 텍스트입니다. 객관식에서는 지시문, 질문, 번호가 붙은 모든 선택지를 한 문자열에 담습니다.
+- `final_answer`에는 원본의 정답 내용을, `target`에는 디코더가 생성하도록 학습할 답변을 넣습니다. 객관식에서는 정답 선택지의 텍스트를 사용합니다.
+- 이미지-텍스트 예제에는 이미지 경로와 실제 파일의 `image_sha256`이 필요합니다. 텍스트 전용 예제에서는 이미지 필드를 생략합니다.
+- `input_token_length`는 고정된 KURE 토크나이저의 특수 토큰을 포함한 입력 길이입니다. `target_token_length`는 고정된 Qwen 토크나이저로 계산한 정답 길이에 EOS 한 토큰을 더한 값입니다.
+- `metadata.native_visual_tokens`에는 고정된 Qwen 이미지 프로세서의 머저 출력 토큰 수를 기록합니다.
+- `prepare_data.py`는 `repeat_factor`, `semantic_id`, `content_id`, `input_hash`, `answer_hash`, `group_id`를 계산해 전처리 결과에 기록합니다.
